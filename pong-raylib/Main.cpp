@@ -1,4 +1,5 @@
 #include "raylib.h"
+
 struct Ball
 {
 	float radius = 0.0f;
@@ -87,24 +88,126 @@ struct Paddle
 	}
 };
 
+// Global Variables
+
+const int winWidth = 700;
+const int winHeight = 500;
+
+Ball ball;
+Paddle leftPaddle;
+Paddle rightPaddle;
+
+const char* winnerText = nullptr;
+const char* detailsText = nullptr;
+
+void Update()
+{
+	// Update
+		//----------------------------------------------------------------------------------
+		// TODO: Update your variables here
+		//----------------------------------------------------------------------------------
+	ball.Update();
+
+	leftPaddle.Move(KEY_W, KEY_S);
+	rightPaddle.Move(KEY_UP, KEY_DOWN);
+
+	if (CheckCollisionCircleRec(ball.pos, ball.radius, leftPaddle.GetRect()))
+	{
+		if (ball.vel.x < 0)
+		{
+			ball.vel.x *= -1.1f;
+			ball.vel.y = (ball.pos.y - leftPaddle.pos.y) / (leftPaddle.size.y / 2) * ball.vel.x;
+		}
+	}
+	if (CheckCollisionCircleRec(ball.pos, ball.radius, rightPaddle.GetRect()))
+	{
+		if (ball.vel.x > 0)
+		{
+			ball.vel.x *= -1.1f;
+			ball.vel.y = (ball.pos.y - rightPaddle.pos.y) / (rightPaddle.size.y / 2) * -ball.vel.x;
+		}
+	}
+
+	if (ball.pos.x < 0)
+	{
+		rightPaddle.score += 1;
+		winnerText = "Right Player Wins!";
+		ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
+		ball.vel = { 0.0f, 0.0f };
+		ball.color = BLACK;
+	}
+	if (ball.pos.x > GetScreenWidth())
+	{
+		leftPaddle.score += 1;
+		winnerText = "Left Player Wins!";
+		ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
+		ball.vel = { 0.0f, 0.0f };
+		ball.color = BLACK;
+	}
+
+	if (winnerText && IsKeyPressed(KEY_SPACE))
+	{
+		ball.color = WHITE;
+		ball.vel = { -ball.prevVelX, 0.0f };
+		ball.prevVelX = ball.vel.x;
+		winnerText = nullptr;
+
+		leftPaddle.SetAttributes({ (float)30, (float)winHeight / 2 }, "Left");
+		rightPaddle.SetAttributes({ (float)winWidth - 30, (float)winHeight / 2 }, "Right");
+	}
+}
+
+void Draw()
+{
+	// Draw
+		//----------------------------------------------------------------------------------
+	BeginDrawing();
+
+	ClearBackground(BLACK);
+
+
+	if (winnerText != nullptr)
+	{
+		int textWidth = MeasureText(winnerText, 60);
+		DrawText(winnerText, (GetScreenWidth() - textWidth) / 2, GetScreenHeight() / 2 - 45, 60, WHITE);
+
+		detailsText = "Press SPACE to Continue";
+		int descTextWidth = MeasureText(detailsText, 30);
+		DrawText(detailsText, (GetScreenWidth() - descTextWidth) / 2, GetScreenHeight() / 2 + 45, 30, LIGHTGRAY);
+	}
+	else
+	{
+		ball.Draw();
+		rightPaddle.Draw();
+		leftPaddle.Draw();
+		leftPaddle.DrawScore();
+		rightPaddle.DrawScore();
+
+		DrawLine(GetScreenWidth() / 2, 0, GetScreenWidth() / 2, GetScreenHeight(), LIGHTGRAY);
+	}
+
+	// Display FPS
+	DrawFPS(10, 10);
+
+	EndDrawing();
+}
+
+void UpdateDrawFrame()
+{
+	Update();
+	Draw();
+}
+
 int main()
 {
-	const int winWidth = 700;
-	const int winHeight = 500;
 
-	Ball ball;
 	ball.radius = 5.0f;
-	ball.pos = { (float) winWidth / 2, (float) winHeight / 2};
+	ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
 	ball.vel = { 300.0f, 0.0f };
 	ball.prevVelX = ball.vel.x;
 
-	Paddle leftPaddle;
-	leftPaddle.SetAttributes({ (float) 30, (float) winHeight / 2}, "Left");
-	Paddle rightPaddle;
-	rightPaddle.SetAttributes({ (float) winWidth - 30, (float) winHeight / 2 }, "Right");
-
-	const char* winnerText = nullptr;
-	const char* detailsText = nullptr;
+	leftPaddle.SetAttributes({ (float)30, (float)winHeight / 2 }, "Left");
+	rightPaddle.SetAttributes({ (float)winWidth - 30, (float)winHeight / 2 }, "Right");
 
 	InitWindow(winWidth, winHeight, "Pong");
 
@@ -114,92 +217,7 @@ int main()
 
 	while (!WindowShouldClose())// Detect window close button or ESC key
 	{
-		// Update
-		//----------------------------------------------------------------------------------
-		// TODO: Update your variables here
-		//----------------------------------------------------------------------------------
-		ball.Update();
-
-		leftPaddle.Move(KEY_W, KEY_S);
-		rightPaddle.Move(KEY_UP, KEY_DOWN);
-
-		if (CheckCollisionCircleRec(ball.pos, ball.radius, leftPaddle.GetRect()))
-		{
-			if (ball.vel.x < 0)
-			{
-				ball.vel.x *= -1.1f;
-				ball.vel.y = (ball.pos.y - leftPaddle.pos.y) / (leftPaddle.size.y / 2) * ball.vel.x;
-			}
-		}
-		if (CheckCollisionCircleRec(ball.pos, ball.radius, rightPaddle.GetRect()))
-		{
-			if (ball.vel.x > 0)
-			{
-				ball.vel.x *= -1.1f;
-				ball.vel.y = (ball.pos.y - rightPaddle.pos.y) / (rightPaddle.size.y / 2) * -ball.vel.x;
-			}
-		}
-
-		if (ball.pos.x < 0)
-		{
-			rightPaddle.score += 1;
-			winnerText = "Right Player Wins!";
-			ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
-			ball.vel = { 0.0f, 0.0f };
-			ball.color = BLACK;
-		}
-		if (ball.pos.x > GetScreenWidth())
-		{
-			leftPaddle.score += 1;
-			winnerText = "Left Player Wins!";
-			ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
-			ball.vel = { 0.0f, 0.0f };
-			ball.color = BLACK;
-		}
-
-		if (winnerText && IsKeyPressed(KEY_SPACE))
-		{
-			ball.color = WHITE;
-			ball.vel = { -ball.prevVelX, 0.0f };
-			ball.prevVelX = ball.vel.x;
-			winnerText = nullptr;
-
-			leftPaddle.SetAttributes({ (float)30, (float)winHeight / 2 }, "Left");
-			rightPaddle.SetAttributes({ (float)winWidth - 30, (float)winHeight / 2 }, "Right");
-		}
-
-		// Draw
-		//----------------------------------------------------------------------------------
-		BeginDrawing();
-
-			ClearBackground(BLACK);
-
-			ball.Draw();
-			rightPaddle.Draw();
-			leftPaddle.Draw();
-
-			if (winnerText != nullptr)
-			{
-				int textWidth = MeasureText(winnerText, 60);
-				DrawText(winnerText, (GetScreenWidth() - textWidth) / 2, GetScreenHeight() / 2 - 45, 60, WHITE);
-
-				detailsText = "Press SPACE to Continue";
-				int descTextWidth = MeasureText(detailsText, 30);
-				DrawText(detailsText, (GetScreenWidth() - descTextWidth) / 2, GetScreenHeight() / 2 + 45, 30, LIGHTGRAY);
-			}
-			else
-			{
-				leftPaddle.DrawScore();
-				rightPaddle.DrawScore();
-
-				DrawLine(GetScreenWidth() / 2, 0, GetScreenWidth() / 2, GetScreenHeight(), LIGHTGRAY);
-			}
-
-			// Display FPS
-			DrawFPS(10, 10);
-
-		EndDrawing();
-
+		UpdateDrawFrame();
 	}
 
 	// De-Initialization
@@ -208,4 +226,6 @@ int main()
 	//--------------------------------------------------------------------------------------
 
 	return 0;
+
+
 }
