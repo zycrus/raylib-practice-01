@@ -1,9 +1,12 @@
 #include "raylib.h"
 struct Ball
 {
-	float radius;
-	Vector2 pos;
-	Vector2 vel;
+	float radius = 0.0f;
+	float prevVelX = 0.0f;
+	Vector2 pos = { 0, 0 };
+	Vector2 vel = { 0, 0 };
+
+	Color color = WHITE;
 
 	void Update()
 	{
@@ -24,25 +27,25 @@ struct Ball
 
 	void Draw()
 	{
-		DrawCircleV(pos, radius, WHITE);
+		DrawCircleV(pos, radius, color);
 	}
 };
 
 struct Paddle
 {
 	Vector2 size = { 10.0f, 125.0f };
-	Vector2 pos;
+	Vector2 pos = { 0.0F, 0.0F };
 	float speed = 500.0f;
 
 	int score = 0;
-	const char* side;
+	const char* side = "";
 
 	Rectangle GetRect()
 	{
 		return { pos.x, pos.y, size.x, size.y };
 	}
 
-	void Create(Vector2 _pos, const char* _side)
+	void SetAttributes(Vector2 _pos, const char* _side)
 	{
 		pos = {_pos.x - size.x / 2, _pos.y - size.y / 2 };
 		side = _side;
@@ -56,7 +59,7 @@ struct Paddle
 	void DrawScore()
 	{
 		const char* scoreText = TextFormat("%i", score);
-		int textWidth;
+		int textWidth = 0;
 		if (side == "Left")
 			textWidth = MeasureText(scoreText, 100) + 50;
 		if (side == "Right")
@@ -92,12 +95,13 @@ int main()
 	Ball ball;
 	ball.radius = 5.0f;
 	ball.pos = { (float) winWidth / 2, (float) winHeight / 2};
-	ball.vel = { 300.0f, 300.0f };
+	ball.vel = { 300.0f, 0.0f };
+	ball.prevVelX = ball.vel.x;
 
 	Paddle leftPaddle;
-	leftPaddle.Create({ (float) 30, (float) winHeight / 2}, "Left");
+	leftPaddle.SetAttributes({ (float) 30, (float) winHeight / 2}, "Left");
 	Paddle rightPaddle;
-	rightPaddle.Create({ (float) winWidth - 30, (float) winHeight / 2 }, "Right");
+	rightPaddle.SetAttributes({ (float) winWidth - 30, (float) winHeight / 2 }, "Right");
 
 	const char* winnerText = nullptr;
 	const char* detailsText = nullptr;
@@ -138,20 +142,30 @@ int main()
 
 		if (ball.pos.x < 0)
 		{
+			rightPaddle.score += 1;
 			winnerText = "Right Player Wins!";
+			ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
 			ball.vel = { 0.0f, 0.0f };
+			ball.color = BLACK;
 		}
 		if (ball.pos.x > GetScreenWidth())
 		{
+			leftPaddle.score += 1;
 			winnerText = "Left Player Wins!";
+			ball.pos = { (float)winWidth / 2, (float)winHeight / 2 };
 			ball.vel = { 0.0f, 0.0f };
+			ball.color = BLACK;
 		}
 
 		if (winnerText && IsKeyPressed(KEY_SPACE))
 		{
-			ball.pos = { (float)winWidth / 2, (float)winHeight / 2 }; 
-			ball.vel = { 300.0f, 300.0f };
+			ball.color = WHITE;
+			ball.vel = { -ball.prevVelX, 0.0f };
+			ball.prevVelX = ball.vel.x;
 			winnerText = nullptr;
+
+			leftPaddle.SetAttributes({ (float)30, (float)winHeight / 2 }, "Left");
+			rightPaddle.SetAttributes({ (float)winWidth - 30, (float)winHeight / 2 }, "Right");
 		}
 
 		// Draw
